@@ -121,6 +121,7 @@ if ENV:
     BOT_API_URL = os.environ.get('BOT_API_URL', "https://api.telegram.org/bot")
     HELP_IMG = os.environ.get("HELP_IMG", True)
     START_IMG = os.environ.get("START_IMG", True)
+    DB_URI = os.environ.get("DB_URI", None)
     
     try:
         BL_CHATS = {int(x) for x in os.environ.get("BL_CHATS", "").split()}
