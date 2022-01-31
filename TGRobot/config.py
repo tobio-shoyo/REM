@@ -41,7 +41,7 @@ class Config(object):
 
     DONATION_LINK = None
     CERT_PATH = None
-    PORT = 5000
+    PORT = 3000
     DEL_CMDS = True  
     STRICT_GBAN = True
     WORKERS = (8)
