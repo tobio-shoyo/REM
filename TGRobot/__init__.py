@@ -123,6 +123,12 @@ if ENV:
     START_IMG = os.environ.get("START_IMG", True)
     DB_URI = os.environ.get("DB_URI", None)
     
+    updater.start_webhook(listen="0.0.0.0",
+                      port=PORT,
+                      url_path=TOKEN)
+updater.bot.set_webhook("https://remdiii.herokuapp.com/" + TOKEN)
+updater.idle()
+    
     try:
         BL_CHATS = {int(x) for x in os.environ.get("BL_CHATS", "").split()}
     except ValueError:
