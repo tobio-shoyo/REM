@@ -100,7 +100,7 @@ if ENV:
     OPENWEATHERMAP_ID = os.environ.get("OPENWEATHERMAP_ID", "") # From:- https://openweathermap.org/api
     GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN", None) # From:- http://genius.com/api-clients
     MONGO_DB_URL = os.environ.get("MONGO_DB_URL", None) # MongoDB URL (From:- https://www.mongodb.com/)
-    REDIS_URL = os.environ.get("REDIS_URL", None) # REDIS URL (From:- Heraku & Redis)
+    REDIS_URL = os.environ.get("REDIS_URL", "redis://Falco:Bhanubhai123_@redis-13865.c99.us-east-1-4.ec2.cloud.redislabs.com:13865/Falco") # REDIS URL (From:- Heraku & Redis)
     BOT_ID = int(os.environ.get("BOT_ID", 5275308569)) # Telegram Bot ID (EXP:- 1241223850)
     SUPPORT_CHAT = os.environ.get("SUPPORT_CHAT", None) # Support Chat Group Link (Use @Black_Knights_Union_Support || Dont Use https://t.me/Black_Knights_Union_Support)
     SPAMWATCH_SUPPORT_CHAT = os.environ.get("SPAMWATCH_SUPPORT_CHAT", None) # Use @SpamWatchSupport
