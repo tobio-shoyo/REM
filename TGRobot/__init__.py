@@ -1,323 +1,83 @@
-import logging
+# Create a new config.py or rename this to config.py file in same dir and import, then extend this class.
+import json
 import os
-import sys
-import time
-import spamwatch
-import httpx
-import aiohttp
-import telegram.ext as tg
 
-from pyrogram import Client, errors
-from pyrogram.errors.exceptions.bad_request_400 import PeerIdInvalid, ChannelInvalid
-from telethon import TelegramClient
-from telethon.sessions import MemorySession
-from telethon.sessions import StringSession
-from motor import motor_asyncio
-from odmantic import AIOEngine
-from pymongo import MongoClient
-from pymongo.errors import ServerSelectionTimeoutError
-from redis import StrictRedis
-from Python_ARQ import ARQ
-from aiohttp import ClientSession
-from telegraph import Telegraph
-from telegram import Chat
 
-StartTime = time.time()
+def get_user_list(config, key):
+    with open("{}/TGRobot/{}".format(os.getcwd(), config), "r") as json_file:
+        return json.load(json_file)[key]
 
-# enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("log.txt"), logging.StreamHandler()],
-    level=logging.INFO,
-)
 
-LOGGER = logging.getLogger(__name__)
 
-# if version < 3.6, stop bot.
-if sys.version_info[0] < 3 or sys.version_info[1] < 6:
-    LOGGER.error(
-        "You MUST have a python version of at least 3.6! Multiple features depend on this. Bot quitting.",
-    )
-    sys.exit(1)
+class Config(object):
+    LOGGER = True
+    API_ID = 7426647
+    API_HASH = "6fb040192f120dabb810cc7ebbb1e857"
+    TOKEN = "5275308569:AAGxW6SikyZUlTWRgeI2CQqVyeseSwi2Lfc" 
+    OWNER_ID = 1007196749 
+    OWNER_USERNAME = "INTERVIER_RRRR"
+    SUPPORT_CHAT = "Rem_Support"  
+    JOIN_LOGGER = (-1001774536726)
+    EVENT_LOGS = (-1001597613556)
+    SQLALCHEMY_DATABASE_URI = "sqldbtype://username:pw@hostname:port/db_name"  # needed for any database modules
+    LOAD = []
+    NO_LOAD = ["rss", "cleaner", "connection", "math"]
+    WEBHOOK = False
+    INFOPIC = True
+    URL = None
+    SPAMWATCH_API = "Q7fkrZmh41zum0Gvy4ueINGzggcJXnN3GJ3qXKfRdKneqS_BOqUKDfKfednj1vDD"  # go to support.spamwat.ch to get key
+    SPAMWATCH_SUPPORT_CHAT = "@SpamWatchSupport"
+    
+    # OPTIONAL
+    ##List of id's -  (not usernames) for users which have sudo access to the bot.
+    DRAGONS = get_user_list("elevated_users.json", "sudos")
+    ##List of id's - (not usernames) for developers who will have the same perms as the owner
+    DEV_USERS = get_user_list("elevated_users.json", "devs")
+    ##List of id's (not usernames) for users which are allowed to gban, but can also be banned.
+    DEMONS = get_user_list("elevated_users.json", "supports")
+    # List of id's (not usernames) for users which WONT be banned/kicked by the bot.
+    TIGERS = get_user_list("elevated_users.json", "tigers")
+    WOLVES = get_user_list("elevated_users.json", "whitelists")
 
-ENV = bool(os.environ.get("ENV", True))
-
-if ENV:
-    TOKEN = os.environ.get("TOKEN", "5275308569:AAGxW6SikyZUlTWRgeI2CQqVyeseSwi2Lfc")
-
-    try:
-        OWNER_ID = int(os.environ.get("OWNER_ID", 1007196749))
-    except ValueError:
-        raise Exception("Your OWNER_ID env variable is not a valid integer.")
-
-    JOIN_LOGGER = os.environ.get("JOIN_LOGGER", None)
-    OWNER_USERNAME = os.environ.get("OWNER_USERNAME", None)
-
-    try:
-        DRAGONS = {int(x) for x in os.environ.get("DRAGONS", "").split()}
-        DEV_USERS = {int(x) for x in os.environ.get("DEV_USERS", "").split()}
-    except ValueError:
-        raise Exception("Your sudo or dev users list does not contain valid integers.")
-
-    try:
-        DEMONS = {int(x) for x in os.environ.get("DEMONS", "").split()}
-    except ValueError:
-        raise Exception("Your support users list does not contain valid integers.")
-
-    try:
-        WOLVES = {int(x) for x in os.environ.get("WOLVES", "").split()}
-    except ValueError:
-        raise Exception("Your whitelisted users list does not contain valid integers.")
-
-    try:
-        TIGERS = {int(x) for x in os.environ.get("TIGERS", "").split()}
-    except ValueError:
-        raise Exception("Your scout users list does not contain valid integers.")
-
-    INFOPIC = bool(os.environ.get("INFOPIC", False)) # Info Pic (use True[Value] If You Want To Show In /info.)
-    EVENT_LOGS = os.environ.get("EVENT_LOGS", None) # G-Ban Logs (Channel) (-100)
-    ERROR_LOGS = os.environ.get("ERROR_LOGS", None) # Error Logs (Channel Ya Group Choice Is Yours) (-100)
-    WEBHOOK = bool(os.environ.get("WEBHOOK", False))
-    URL = os.environ.get("URL", "")  # If You Deploy On Heraku. [URL PERTEN:- https://{App Name}.herokuapp.com/ || EXP:- https://yuki-REM-robot.herokuapp.com/]
+    DONATION_LINK = None
+    CERT_PATH = None
     PORT = int(os.environ.get("PORT", 8443)) 
-    CERT_PATH = os.environ.get("CERT_PATH")
-    API_ID = os.environ.get("API_ID", 7426647) # Bot Owner's API_ID (From:- https://my.telegram.org/auth)
-    API_HASH = os.environ.get("API_HASH", "6fb040192f120dabb810cc7ebbb1e857") # Bot Owner's API_HASH (From:- https://my.telegram.org/auth)
-    DB_URL = os.environ.get("DATABASE_URL") # Any SQL Database Link (RECOMMENDED:- PostgreSQL & https://www.elephantsql.com)
-    DONATION_LINK = os.environ.get("DONATION_LINK") # Donation Link (ANY)
-    LOAD = os.environ.get("LOAD", "").split() # Don't Change
-    NO_LOAD = os.environ.get("NO_LOAD", "translation").split() # Don't Change
-    DEL_CMDS = bool(os.environ.get("DEL_CMDS", False)) # Don't Change
-    STRICT_GBAN = bool(os.environ.get("STRICT_GBAN", False)) # Use `True` Value
-    WORKERS = int(os.environ.get("WORKERS", 8)) # Don't Change
-    BAN_STICKER = os.environ.get("BAN_STICKER", "CAADAgADOwADPPEcAXkko5EB3YGYAg") # Don't Change
-    ALLOW_EXCL = os.environ.get("ALLOW_EXCL", False) # Don't Change
-    TEMP_DOWNLOAD_DIRECTORY = os.environ.get("TEMP_DOWNLOAD_DIRECTORY", "./") # Don't Change
-    CASH_API_KEY = os.environ.get("CASH_API_KEY", None) # From:- https://www.alphavantage.co/support/#api-key
-    TIME_API_KEY = os.environ.get("TIME_API_KEY", None) # From:- https://timezonedb.com/api
-    WALL_API = os.environ.get("WALL_API", None) # From:- https://wall.alphacoders.com/api.php
-    REM_BG_API_KEY = os.environ.get("REM_BG_API_KEY", None) # From:- https://www.remove.bg/
-    OPENWEATHERMAP_ID = os.environ.get("OPENWEATHERMAP_ID", "") # From:- https://openweathermap.org/api
-    GENIUS_API_TOKEN = os.environ.get("GENIUS_API_TOKEN", None) # From:- http://genius.com/api-clients
-    MONGO_DB_URL = os.environ.get("MONGO_DB_URL", None) # MongoDB URL (From:- https://www.mongodb.com/)
-    REDIS_URL = os.environ.get("REDIS_URL", "redis://Falco:Bhanubhai123_@redis-13865.c99.us-east-1-4.ec2.cloud.redislabs.com:13865/Falco") # REDIS URL (From:- Heraku & Redis)
-    BOT_ID = int(os.environ.get("BOT_ID", 5275308569)) # Telegram Bot ID (EXP:- 1241223850)
-    SUPPORT_CHAT = os.environ.get("SUPPORT_CHAT", None) # Support Chat Group Link (Use @Black_Knights_Union_Support || Dont Use https://t.me/Black_Knights_Union_Support)
-    SPAMWATCH_SUPPORT_CHAT = os.environ.get("SPAMWATCH_SUPPORT_CHAT", None) # Use @SpamWatchSupport
-    SPAMWATCH_API = os.environ.get("SPAMWATCH_API", None) # From https://t.me/SpamWatchBot 
-    BOT_USERNAME = os.environ.get("BOT_USERNAME", "") # Bot Username
-    STRING_SESSION = os.environ.get("STRING_SESSION", None) # Telethon Based String Session (2nd ID) [ From https://repl.it/@SpEcHiDe/GenerateStringSession ]
-    HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME", True) # Heroku App Name 
-    HEROKU_API_KEY = os.environ.get("HEROKU_API_KEY", True) # Heroku API [From https://dashboard.heroku.com/account]
-    YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", True)
-    ALLOW_CHATS = os.environ.get("ALLOW_CHATS", True) # Don't Change
-    BOT_NAME = os.environ.get("BOT_NAME", True) # Name Of your Bot.4
-    MONGO_DB = "REM"
+    DEL_CMDS = True  
+    STRICT_GBAN = True
+    WORKERS = (8)
+    BAN_STICKER = "CAACAgIAAxkBAAFZJ0phbOUj_DO3OBj2TCnWV1X3SIKq_QACbgADJ--KHPzNmg619o2pIQQ"  # banhammer marie sticker id, the bot will send this sticker before banning or kicking a user in chat.
+    ALLOW_EXCL = True 
+    CASH_API_KEY = ("awoo")  # Get your API key from https://www.alphavantage.co/support/#api-key
+    TIME_API_KEY = "NCVXIXGDRFH5"  # Get your API key from https://timezonedb.com/api
+    WALL_API = ("awoo")  # For wallpapers, get one from https://wall.alphacoders.com/api.php
+    AI_API_KEY = "awoo"  # For chatbot, get one from https://coffeehouse.intellivoid.net/dashboard
+    BL_CHATS = []  # List of groups that you want blacklisted.
+    SPAMMERS = None
+    ALLOW_CHATS = True
+    MONGO_DB_URI = "mongodb+srv://Shoyo:shoyo123@shoyo.lwslq.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+    ARQ_API_KEY = "QQYGAV-QXCTIT-SZDAGG-ZQPHDF-ARQ"
     ARQ_API_URL = "https://thearq.tech"
-    GOOGLE_CHROME_BIN = "/usr/bin/google-chrome"
-    CHROME_DRIVER = "/usr/bin/chromedriver"
-    BOT_API_URL = os.environ.get('BOT_API_URL', "https://api.telegram.org/bot")
-    HELP_IMG = os.environ.get("HELP_IMG", True)
-    START_IMG = os.environ.get("START_IMG", True)
-    
-    try:
-        BL_CHATS = {int(x) for x in os.environ.get("BL_CHATS", "").split()}
-    except ValueError:
-        raise Exception("Your blacklisted chats list does not contain valid integers.")
-
-else:
-    from TGRobot.config import Development as Config
-
-    TOKEN = Config.TOKEN
-
-    try:
-        OWNER_ID = int(Config.OWNER_ID)
-    except ValueError:
-        raise Exception("Your OWNER_ID variable is not a valid integer.")
-
-    JOIN_LOGGER = Config.JOIN_LOGGER
-    OWNER_USERNAME = Config.OWNER_USERNAME
-    ALLOW_CHATS = Config.ALLOW_CHATS
-    try:
-        DRAGONS = {int(x) for x in Config.DRAGONS or []}
-        DEV_USERS = {int(x) for x in Config.DEV_USERS or []}
-    except ValueError:
-        raise Exception("Your sudo or dev users list does not contain valid integers.")
-
-    try:
-        DEMONS = {int(x) for x in Config.DEMONS or []}
-    except ValueError:
-        raise Exception("Your support users list does not contain valid integers.")
-
-    try:
-        WOLVES = {int(x) for x in Config.WOLVES or []}
-    except ValueError:
-        raise Exception("Your whitelisted users list does not contain valid integers.")
-
-    try:
-        TIGERS = {int(x) for x in Config.TIGERS or []}
-    except ValueError:
-        raise Exception("Your tiger users list does not contain valid integers.")
-
-
-    INFOPIC = Config.INFOPIC
-    EVENT_LOGS = Config.EVENT_LOGS 
-    ERROR_LOGS = Config.ERROR_LOGS
-    WEBHOOK = Config.WEBHOOK
-    URL = Config.URL
-    PORT = Config.PORT
-    CERT_PATH = Config.CERT_PATH
-    API_ID = Config.API_ID
-    API_HASH = Config.API_HASH
-    DB_URL = Config.DB_URL
-    DONATION_LINK = Config.DONATION_LINK
-    STRICT_GBAN = Config.STRICT_GBAN
-    WORKERS = Config.WORKERS
-    BAN_STICKER = Config.BAN_STICKER
-    TEMP_DOWNLOAD_DIRECTORY = Config.TEMP_DOWNLOAD_DIRECTORY
-    LOAD = Config.LOAD
-    NO_LOAD = Config.NO_LOAD
-    CASH_API_KEY = Config.CASH_API_KEY
-    TIME_API_KEY = Config.TIME_API_KEY
-    WALL_API = Config.WALL_API
-    MONGO_DB_URL = Config.MONGO_DB_URL
-    REDIS_URL = Config.REDIS_URL
-    SUPPORT_CHAT = Config.SUPPORT_CHAT
-    SPAMWATCH_SUPPORT_CHAT = Config.SPAMWATCH_SUPPORT_CHAT
-    SPAMWATCH_API = Config.SPAMWATCH_API
-    REM_BG_API_KEY = Config.REM_BG_API_KEY
-    OPENWEATHERMAP_ID = Config.OPENWEATHERMAP_ID
-    BOT_ID = Config.BOT_ID
-    BOT_USERNAME = Config.BOT_USERNAME
-    YOUTUBE_API_KEY = Config.YOUTUBE_API_KEY
-    ALLOW_EXCL = Config.ALLOW_EXCL
-    TEMP_DOWNLOAD_DIRECTORY = Config.TEMP_DOWNLOAD_DIRECTORY
-    ARQ_API_URL = Config.ARQ_API_URL
-    BOT_NAME = Config.BOT_NAME
-    DEL_CMDS = Config.DEL_CMDS
-    MONGO_DB_URL = Config.MONGO_DB_URL
-    MONGO_DB = Config.MONGO_DB
-    STRING_SESSION = Config.STRING_SESSION
-    DB_URI = Config.DB_URI
-
-    try:
-        BL_CHATS = {int(x) for x in Config.BL_CHATS or []}
-    except ValueError:
-        raise Exception("Your blacklisted chats list does not contain valid integers.")
-        
-
-DRAGONS.add(OWNER_ID)
-DEV_USERS.add(OWNER_ID)
-
-REDIS = StrictRedis.from_url(REDIS_URL, decode_responses=True)
-
-try:
-
-    REDIS.ping()
-
-    LOGGER.info("[REM]: Connecting To AOGIRI • Data Center • Mumbai • Redis Database")
-
-except BaseException:
-
-    raise Exception("[REM ERROR]: Your AOGIRI • Data Center • Mumbai • Redis Database Is Not Alive, Please Check Again.")
-
-finally:
-
-   REDIS.ping()
-
-   LOGGER.info("[REM]: Connection To The AOGIRI • Data Center • Mumbai • Redis Database Established Successfully!")
+    OPENWEATHERMAP_ID = "8c62bed60110267c2a039756f6cdddef"
+    ERROR_LOGS = (-1001597613556)
+    DB_URL = ""
+    TEMP_DOWNLOAD_DIRECTORY = "./"
+    MONGO_DB = "mongodb"
+    MONGO_DB_URL = "mongodb+srv://Shoyo:shoyo123@shoyo.lwslq.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+    REDIS_URL = "redis://Falco:Bhanubhai123_@redis-13865.c99.us-east-1-4.ec2.cloud.redislabs.com:13865/Falco"
+    REM_BG_API_KEY = "q4HcjNjJDJic8Gw6xUoAhgxq"
+    BOT_ID = 2135830536
+    BOT_USERNAME = "remtestiengbot"
+    BOT_NAME = "Rem"
+    YOUTUBE_API_KEY = "AIzaSyBnaLtVGHt2BfQLEsTyVGb2Sq-USHIDfrM"
+    STRING_SESSION = "1BVtsOMQBuw-XRnaQbzbmtsRyAZ8__C4EN9EL45aTNDZTFPW9o_XsPHi0OAhy2_D0KxbII5Rue30eOCqMTr39viyDb5QDMXFzyQJdfz-q7JCCFVTIWBTgslRtnC2lXLUTxuiLGUaI2mUQgdsQFz0DSW30vIr1mwOCAxJqu5qTc2_Ihw9c8AQrisdOd_IftFs5bUl748EluA_2qaNZVBfNlDV5XDEFTgAbT6UrgUZJu0zm7s8ji1Uwn8O_S4NqCLBj2qMeRkLkmfM_1rwmvLQjbzqf7GplagaBQ8AYfsgd4SWqd7Ej__VCFCo_esXxpLquu-RpuwIf-cZYeSRVm08p6tf3o3I05z0="
+    DB_URI = "postgresql://pgnkbrve:sDwcC5w5wFzIqCmmVMCtkTZw-DMzro03@castor.db.elephantsql.com/pgnkbrve"
     
 
-if not SPAMWATCH_API:
-    sw = None
-    LOGGER.warning("[REM ERROR]: SpamWatch API key Is Missing! Recheck Your Config.")
-else:
-    try:
-        sw = spamwatch.Client(SPAMWATCH_API)
-    except:
-        sw = None
-        LOGGER.warning("[REM ERROR]: Can't connect to SpamWatch!")
 
 
-# Credits Logger
-print("[REM] REM Is Starting. | AOGIRI • Black Knights Union Project | Licensed Under GPLv3.")
-print("[REM] Cutie Cutie! Successfully Connected With A  AOGIRI • Data Center • Mumbai")
-print("[REM] Project Maintained By: github.com/Tobio-Shoyo (t.me/INTERVIER_RRRR)")
+class Production(Config):
+    LOGGER = True
 
 
-print("[REM]: Telegraph Installing")
-telegraph = Telegraph()
-print("[REM]: Telegraph Account Creating")
-telegraph.create_account(short_name='rem')
-updater = tg.Updater(token=TOKEN, workers=WORKERS, request_kwargs={"read_timeout": 10, "connect_timeout": 10}, use_context=True)           
-print("[REM]: TELETHON CLIENT STARTING")
-telethn = TelegramClient(MemorySession(), API_ID, API_HASH)
-dispatcher = updater.dispatcher
-print("[REM]: PYROGRAM CLIENT STARTING")
-session_name = TOKEN.split(":")[0]
-pgram = Client(
-    session_name,
-    api_id=API_ID,
-    api_hash=API_HASH,
-    bot_token=TOKEN,
-)
-print("[REM]: Connecting To AOGIRI • Data Center • Mumbai • MongoDB Database")
-mongodb = MongoClient(MONGO_DB_URL, 27017)[MONGO_DB]
-motor = motor_asyncio.AsyncIOMotorClient(MONGO_DB_URL)
-db = motor[MONGO_DB]
-engine = AIOEngine(motor, MONGO_DB)
-print("[INFO]: INITIALZING AIOHTTP SESSION")
-aiohttpsession = ClientSession()
-# ARQ Client
-print("[INFO]: INITIALIZING ARQ CLIENT")
-arq = ARQ("https://thearq.tech", "YIECCC-NAJARO-OLLREW-SJSRIP-ARQ", aiohttpsession)
-print("[REM]: Connecting To AOGIRI • Data Center • Mumbai • PostgreSQL Database")
-ubot = TelegramClient(StringSession(STRING_SESSION), API_ID, API_HASH)
-print("[REM]: Connecting To AOGIRI • REM Userbot (t.me/INTERVIER_RRRR)")
-timeout = httpx.Timeout(40, pool=None)
-http = httpx.AsyncClient(http2=True, timeout=timeout)
-
-async def get_entity(client, entity):
-    entity_client = client
-    if not isinstance(entity, Chat):
-        try:
-            entity = int(entity)
-        except ValueError:
-            pass
-        except TypeError:
-            entity = entity.id
-        try:
-            entity = await client.get_chat(entity)
-        except (PeerIdInvalid, ChannelInvalid):
-            for pgram in apps:
-                if pgram != client:
-                    try:
-                        entity = await pgram.get_chat(entity)
-                    except (PeerIdInvalid, ChannelInvalid):
-                        pass
-                    else:
-                        entity_client = pgram
-                        break
-            else:
-                entity = await pgram.get_chat(entity)
-                entity_client = pgram
-    return entity, entity_client
-
-apps = [pgram]
-DRAGONS = list(DRAGONS) + list(DEV_USERS)
-DEV_USERS = list(DEV_USERS)
-WOLVES = list(WOLVES)
-DEMONS = list(DEMONS)
-TIGERS = list(TIGERS)
-
-# Load at end to ensure all prev variables have been set
-from TGRobot.modules.helper_funcs.handlers import (
-    CustomCommandHandler,
-    CustomMessageHandler,
-    CustomRegexHandler,
-)
-
-# make sure the regex handler can take extra kwargs
-tg.RegexHandler = CustomRegexHandler
-tg.CommandHandler = CustomCommandHandler
-tg.MessageHandler = CustomMessageHandler
+class Development(Config):
+    LOGGER = True
