@@ -44,3 +44,4 @@ httpx[http2]>=0.18.1,<1.0.0
 emoji
 markdown2
 bleach
+psycopg2
