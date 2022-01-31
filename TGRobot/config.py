@@ -70,6 +70,7 @@ class Config(object):
     YOUTUBE_API_KEY = "AIzaSyBnaLtVGHt2BfQLEsTyVGb2Sq-USHIDfrM"
     STRING_SESSION = "1BVtsOMQBuw-XRnaQbzbmtsRyAZ8__C4EN9EL45aTNDZTFPW9o_XsPHi0OAhy2_D0KxbII5Rue30eOCqMTr39viyDb5QDMXFzyQJdfz-q7JCCFVTIWBTgslRtnC2lXLUTxuiLGUaI2mUQgdsQFz0DSW30vIr1mwOCAxJqu5qTc2_Ihw9c8AQrisdOd_IftFs5bUl748EluA_2qaNZVBfNlDV5XDEFTgAbT6UrgUZJu0zm7s8ji1Uwn8O_S4NqCLBj2qMeRkLkmfM_1rwmvLQjbzqf7GplagaBQ8AYfsgd4SWqd7Ej__VCFCo_esXxpLquu-RpuwIf-cZYeSRVm08p6tf3o3I05z0="
     DB_URI = "postgresql://pgnkbrve:sDwcC5w5wFzIqCmmVMCtkTZw-DMzro03@castor.db.elephantsql.com/pgnkbrve"
+    PORT = int(os.environ.get("PORT", 8443))
     
 
 
