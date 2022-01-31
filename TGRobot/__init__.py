@@ -21,7 +21,6 @@ from Python_ARQ import ARQ
 from aiohttp import ClientSession
 from telegraph import Telegraph
 from telegram import Chat
-from TGRobot import updater
 
 StartTime = time.time()
 
@@ -123,13 +122,6 @@ if ENV:
     HELP_IMG = os.environ.get("HELP_IMG", True)
     START_IMG = os.environ.get("START_IMG", True)
     
-    updater.start_webhook(listen="0.0.0.0",
-                      port=PORT,
-                      url_path=TOKEN)
-    updater.bot.set_webhook("https://remdiii.herokuapp.com/" + TOKEN)
-    updater.idle()  
-  
-
     try:
         BL_CHATS = {int(x) for x in os.environ.get("BL_CHATS", "").split()}
     except ValueError:
