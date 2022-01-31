@@ -307,8 +307,8 @@ async def get_entity(client, entity):
 
 updater.start_webhook(listen="0.0.0.0",
                       port=PORT,
-                      url_path=TOKEN)
-updater.bot.set_webhook("https://remdiii.herokuapp.com/" + TOKEN)
+                      url_path=TOKEN,
+                      webhook_url="https://remdiii.herokuapp.com/" + TOKEN)
 updater.idle()
 
 apps = [pgram]
