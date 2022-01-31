@@ -21,6 +21,7 @@ from Python_ARQ import ARQ
 from aiohttp import ClientSession
 from telegraph import Telegraph
 from telegram import Chat
+from TGRobot import updater
 
 StartTime = time.time()
 
@@ -79,7 +80,7 @@ if ENV:
     ERROR_LOGS = os.environ.get("ERROR_LOGS", None) # Error Logs (Channel Ya Group Choice Is Yours) (-100)
     WEBHOOK = bool(os.environ.get("WEBHOOK", False))
     URL = os.environ.get("URL", "")  # If You Deploy On Heraku. [URL PERTEN:- https://{App Name}.herokuapp.com/ || EXP:- https://yuki-REM-robot.herokuapp.com/]
-    PORT = int(os.environ.get("PORT", 443)) 
+    PORT = int(os.environ.get("PORT", 8443)) 
     CERT_PATH = os.environ.get("CERT_PATH")
     API_ID = os.environ.get("API_ID", None) # Bot Owner's API_ID (From:- https://my.telegram.org/auth)
     API_HASH = os.environ.get("API_HASH", None) # Bot Owner's API_HASH (From:- https://my.telegram.org/auth)
@@ -121,14 +122,14 @@ if ENV:
     BOT_API_URL = os.environ.get('BOT_API_URL', "https://api.telegram.org/bot")
     HELP_IMG = os.environ.get("HELP_IMG", True)
     START_IMG = os.environ.get("START_IMG", True)
-    DB_URI = os.environ.get("DB_URI", None)
     
     updater.start_webhook(listen="0.0.0.0",
                       port=PORT,
                       url_path=TOKEN)
-updater.bot.set_webhook("https://remdiii.herokuapp.com/" + TOKEN)
-updater.idle()
-    
+    updater.bot.set_webhook("https://remdiii.herokuapp.com/" + TOKEN)
+    updater.idle()  
+  
+
     try:
         BL_CHATS = {int(x) for x in os.environ.get("BL_CHATS", "").split()}
     except ValueError:
