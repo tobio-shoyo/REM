@@ -46,3 +46,4 @@ markdown2
 bleach
 psycopg2
 pyrate-limiter
+future
